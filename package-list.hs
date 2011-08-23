@@ -1,12 +1,17 @@
 module Main ( main ) where
 
-import Data.Char
-import Data.List
-import Data.Version
-import Distribution.Text
-import System.Process
-import Text.Regex.Posix
 import Control.Exception ( assert )
+import Control.Monad ( when, filterM )
+import Data.Char ( toLower )
+import Data.List ( nubBy, sortBy )
+import Data.Ord ( comparing )
+import Data.Version ( Version(..) )
+import Distribution.Package ( PackageIdentifier(..), PackageName(..) )
+import Distribution.Text ( simpleParse, display )
+import System.Directory ( doesDirectoryExist, doesFileExist )
+import System.FilePath ( (</>), (<.>) )
+import System.Process ( readProcess )
+import Text.Regex.Posix ( (=~), match, makeRegexOpts, compExtended, execBlank )
 
 type Pkg    = (String,Version,String) -- (Name, Version, Attribute)
 type Pkgset = [Pkg]
@@ -17,15 +22,19 @@ comparePkgByVersion (n1,v1,a1) (n2,v2,a2)
   | otherwise   = compare a2 a1
 
 comparePkgByName :: Pkg -> Pkg-> Ordering
-comparePkgByName (n1,_,_) (n2,_,_) = compare (map toLower n1) (map toLower n2)
+comparePkgByName (n1,_,_) (n2,_,_) = comparing (map toLower) n1 n2
 
 parseHaskellPackageName :: String -> Maybe Pkg
 parseHaskellPackageName name =
-  case name `regsubmatch` "^(haskellPackages[^ \t]+)[ \t]+haskell-(.*)-ghc[0-9.]+-(.*)$" of
-    [attr,name',version] -> case simpleParse version of
-                              Just version' -> Just (name',version',attr)
-                              _             -> Nothing
-    _               -> Nothing
+  case name `regsubmatch` "^(haskellPackages[^ \t]+)[ \t]+(.+)$" of
+    [attr,name'] -> case name' `regsubmatch` "^haskell-(.+)-ghc[0-9.]+-(.+)$" of
+                      [name'',version] -> case simpleParse version of
+                                            Just version' -> Just (name'',version',attr)
+                                            _             -> error ("cannot parse " ++ show name)
+                      _                -> case simpleParse name' of
+                                            Just (PackageIdentifier (PackageName n) v) -> Just (n,v,attr)
+                                            _                                          -> error ("cannot parse " ++ show name)
+    _            -> Nothing
 
 getHaskellPackageList :: IO Pkgset
 getHaskellPackageList = do
@@ -41,8 +50,12 @@ stripGhc721Versions pkgs = [ p | p@(_,_,attr) <- pkgs , not (attr =~ "ghc721") ]
 selectLatestVersions :: Pkgset -> Pkgset
 selectLatestVersions = nubBy (\x y -> comparePkgByName x y == EQ) . sortBy comparePkgByVersion
 
+isHackagePackage :: Pkg -> IO Bool
+isHackagePackage (name,version,_) = doesFileExist path
+  where path = "/dev/shm/hackage/" </> name </> display version </> name <.> "cabal"
+
 formatPackageLine :: Pkg -> String
-formatPackageLine (name,version,attr) = show (name, showVersion version, Just url)
+formatPackageLine (name,version,attr) = show (name, display version, Just url)
   where
     url = "http://hydra.nixos.org/job/nixpkgs/trunk/" ++ attr
 
@@ -53,5 +66,8 @@ regsubmatch buf patt = let (_,_,_,x) = f in x
 
 main :: IO ()
 main = do
-  pkgset <- fmap (selectLatestVersions . stripGhc721Versions . stripProfilingVersions) getHaskellPackageList
+  haveHackage <- doesDirectoryExist "/dev/shm/hackage"
+  when (not haveHackage) (fail "cannot find hackage database at /dev/shm/hackage")
+  pkgset' <- fmap (selectLatestVersions . stripGhc721Versions . stripProfilingVersions) getHaskellPackageList
+  pkgset <- filterM isHackagePackage pkgset'
   mapM_ (putStrLn . formatPackageLine) (sortBy comparePkgByName pkgset)
