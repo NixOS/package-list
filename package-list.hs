@@ -1,15 +1,12 @@
 module Main ( main ) where
 
 import Control.Exception ( assert )
-import Control.Monad ( when, filterM )
 import Data.Char ( toLower )
 import Data.List ( nubBy, sortBy )
 import Data.Ord ( comparing )
-import Data.Version ( Version(..) )
-import Distribution.Package ( PackageIdentifier(..), PackageName(..) )
+import Data.Maybe ( isJust )
+import Distribution.Hackage.DB ( Hackage, readHackage, lookup, PackageIdentifier(..), PackageName(..), Version )
 import Distribution.Text ( simpleParse, display )
-import System.Directory ( doesDirectoryExist, doesFileExist )
-import System.FilePath ( (</>), (<.>) )
 import System.Process ( readProcess )
 import Text.Regex.Posix ( (=~), match, makeRegexOpts, compExtended, execBlank )
 
@@ -50,9 +47,10 @@ stripGhc721Versions pkgs = [ p | p@(_,_,attr) <- pkgs , not (attr =~ "ghc721") ]
 selectLatestVersions :: Pkgset -> Pkgset
 selectLatestVersions = nubBy (\x y -> comparePkgByName x y == EQ) . sortBy comparePkgByVersion
 
-isHackagePackage :: Pkg -> IO Bool
-isHackagePackage (name,version,_) = doesFileExist path
-  where path = "/dev/shm/hackage/" </> name </> display version </> name <.> "cabal"
+isHackagePackage :: Hackage -> Pkg -> Bool
+isHackagePackage db (name,version,_) = isJust (find name db >>= find version)
+  where
+    find x = Distribution.Hackage.DB.lookup x
 
 formatPackageLine :: Pkg -> String
 formatPackageLine (name,version,attr) = show (name, display version, Just url)
@@ -66,8 +64,7 @@ regsubmatch buf patt = let (_,_,_,x) = f in x
 
 main :: IO ()
 main = do
-  haveHackage <- doesDirectoryExist "/dev/shm/hackage"
-  when (not haveHackage) (fail "cannot find hackage database at /dev/shm/hackage")
+  hackage <- readHackage
   pkgset' <- fmap (selectLatestVersions . stripGhc721Versions . stripProfilingVersions) getHaskellPackageList
-  pkgset <- filterM isHackagePackage pkgset'
+  let pkgset = filter (isHackagePackage hackage) pkgset'
   mapM_ (putStrLn . formatPackageLine) (sortBy comparePkgByName pkgset)
