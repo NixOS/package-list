@@ -15,7 +15,8 @@ type Pkgset = [Pkg]
 
 comparePkgByVersion :: Pkg -> Pkg -> Ordering  -- prefers the latest version
 comparePkgByVersion (n1,v1,a1) (n2,v2,a2)
-  | a1 == a2    = assert (n1 == n2) (compare v2 v1)
+  | n1 /= n2    = compare n1 n2
+  | v1 /= v2    = compare v2 v1
   | otherwise   = compare a2 a1
 
 comparePkgByName :: Pkg -> Pkg-> Ordering
