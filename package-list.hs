@@ -24,14 +24,14 @@ comparePkgByName (n1,_,_) (n2,_,_) = comparing (map toLower) n1 n2
 
 parseHaskellPackageName :: String -> Maybe Pkg
 parseHaskellPackageName name =
-  case name `regsubmatch` "^(haskellPackages[^ \t]+)[ \t]+(.+)$" of
+  case name `regsubmatch` "^([^ \t]+)[ \t]+(.+)$" of
     [attr,name'] -> case name' `regsubmatch` "^haskell-(.+)-ghc[0-9.]+-(.+)$" of
                       [name'',version] -> case simpleParse version of
                                             Just version' -> Just (name'',version',attr)
                                             _             -> error ("cannot parse " ++ show name)
                       _                -> case simpleParse name' of
                                             Just (PackageIdentifier (PackageName n) v) -> Just (n,v,attr)
-                                            _                                          -> error ("cannot parse " ++ show name)
+                                            _                                          -> Nothing
     _            -> Nothing
 
 getHaskellPackageList :: IO Pkgset
@@ -66,6 +66,6 @@ regsubmatch buf patt = let (_,_,_,x) = f in x
 main :: IO ()
 main = do
   hackage <- readHackage
-  pkgset' <- fmap (selectLatestVersions . stripGhc721Versions . stripProfilingVersions) getHaskellPackageList
-  let pkgset = filter (isHackagePackage hackage) pkgset'
+  pkgset' <- fmap (filter (isHackagePackage hackage)) getHaskellPackageList
+  let pkgset = (selectLatestVersions . stripGhc721Versions . stripProfilingVersions) pkgset'
   mapM_ (putStrLn . formatPackageLine) (sortBy comparePkgByName pkgset)
