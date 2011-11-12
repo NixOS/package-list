@@ -45,6 +45,9 @@ stripProfilingVersions pkgs = [ p | p@(_,_,attr) <- pkgs , not (attr =~ "ghc[0-9
 stripGhc721Versions :: Pkgset -> Pkgset
 stripGhc721Versions pkgs = [ p | p@(_,_,attr) <- pkgs , not (attr =~ "ghc721") ]
 
+stripGhc722Versions :: Pkgset -> Pkgset
+stripGhc722Versions pkgs = [ p | p@(_,_,attr) <- pkgs , not (attr =~ "ghc722") ]
+
 selectLatestVersions :: Pkgset -> Pkgset
 selectLatestVersions = nubBy (\x y -> comparePkgByName x y == EQ) . sortBy comparePkgByVersion
 
@@ -67,5 +70,5 @@ main :: IO ()
 main = do
   hackage <- readHackage
   pkgset' <- fmap (filter (isHackagePackage hackage)) getHaskellPackageList
-  let pkgset = (selectLatestVersions . stripGhc721Versions . stripProfilingVersions) pkgset'
+  let pkgset = (selectLatestVersions . stripGhc721Versions . stripGhc722Versions . stripProfilingVersions) pkgset'
   mapM_ (putStrLn . formatPackageLine) (sortBy comparePkgByName pkgset)
