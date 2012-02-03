@@ -1,6 +1,5 @@
 module Main ( main ) where
 
-import Control.Exception ( assert )
 import Data.Char ( toLower )
 import Data.List ( nubBy, sortBy )
 import Data.Ord ( comparing )
@@ -39,17 +38,8 @@ getHaskellPackageList = do
   allPkgs <- fmap lines (readProcess "bash" ["-c", "exec nix-env -qaP \\* 2>/dev/tty"] "")
   return [ p | Just p <- map parseHaskellPackageName allPkgs ]
 
-stripProfilingVersions :: Pkgset -> Pkgset
-stripProfilingVersions pkgs = [ p | p@(_,_,attr) <- pkgs , not (attr =~ "ghc[0-9.]+_profiling") ]
-
-stripGhc721Versions :: Pkgset -> Pkgset
-stripGhc721Versions pkgs = [ p | p@(_,_,attr) <- pkgs , not (attr =~ "ghc721") ]
-
-stripGhc722Versions :: Pkgset -> Pkgset
-stripGhc722Versions pkgs = [ p | p@(_,_,attr) <- pkgs , not (attr =~ "ghc722") ]
-
-stripGhcHeadVersions :: Pkgset -> Pkgset
-stripGhcHeadVersions pkgs = [ p | p@(_,_,attr) <- pkgs , not (attr =~ "ghcHEAD") ]
+selectReleaseVersions :: Pkgset -> Pkgset
+selectReleaseVersions pkgs = [ p | p@(_,_,attr) <- pkgs, not (attr =~ "haskellPackages_ghc(6104|6123|741|704_profiling|HEAD)") ]
 
 selectLatestVersions :: Pkgset -> Pkgset
 selectLatestVersions = nubBy (\x y -> comparePkgByName x y == EQ) . sortBy comparePkgByVersion
@@ -73,5 +63,5 @@ main :: IO ()
 main = do
   hackage <- readHackage
   pkgset' <- fmap (filter (isHackagePackage hackage)) getHaskellPackageList
-  let pkgset = (selectLatestVersions . stripGhc721Versions . stripGhc722Versions . stripGhcHeadVersions . stripProfilingVersions) pkgset'
+  let pkgset = (selectLatestVersions . selectReleaseVersions) pkgset'
   mapM_ (putStrLn . formatPackageLine) (sortBy comparePkgByName pkgset)
