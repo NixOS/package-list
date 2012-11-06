@@ -39,7 +39,7 @@ getHaskellPackageList = do
   return [ p | Just p <- map parseHaskellPackageName allPkgs ]
 
 selectReleaseVersions :: Pkgset -> Pkgset
-selectReleaseVersions pkgs = [ p | p@(_,_,attr) <- pkgs, not (attr =~ "haskellPackages_ghc(6104|6123|704|741_profiling|742|761|HEAD)") ]
+selectReleaseVersions pkgs = [ p | p@(_,_,attr) <- pkgs, not (attr =~ "haskellPackages_ghc(6104|6123|704|741|742_profiling|761|HEAD)") ]
 
 selectLatestVersions :: Pkgset -> Pkgset
 selectLatestVersions = nubBy (\x y -> comparePkgByName x y == EQ) . sortBy comparePkgByVersion
