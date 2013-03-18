@@ -1,67 +1,68 @@
 module Main ( main ) where
 
-import Data.Char ( toLower )
-import Data.List ( nubBy, sortBy )
-import Data.Ord ( comparing )
-import Data.Maybe ( isJust )
-import Distribution.Hackage.DB ( Hackage, readHackage, lookup, PackageIdentifier(..), PackageName(..), Version )
-import Distribution.Text ( simpleParse, display )
+import Control.Applicative
+import Data.Char
+import qualified Data.Map as Map
+import Distribution.Hackage.DB ( readHackage, Hackage, PackageIdentifier(..), PackageName(..), Version(..) )
+import Distribution.Text
+import Text.PrettyPrint ( text )
+import Distribution.Compat.ReadP
 import System.Process ( readProcess )
-import Text.Regex.Posix ( (=~), match, makeRegexOpts, compExtended, execBlank )
 
-type Pkg    = (String,Version,String) -- (Name, Version, Attribute)
-type Pkgset = [Pkg]
+newtype Path = Path String
+  deriving (Show, Eq, Ord)
 
-comparePkgByVersion :: Pkg -> Pkg -> Ordering  -- prefers the latest version
-comparePkgByVersion (n1,v1,a1) (n2,v2,a2)
-  | n1 /= n2    = compare n1 n2
-  | v1 /= v2    = compare v2 v1
-  | otherwise   = compare a2 a1
+instance Text Path where
+  disp (Path p) = text p
+  parse = Path <$> munch1 (not . isSpace)
 
-comparePkgByName :: Pkg -> Pkg-> Ordering
-comparePkgByName (n1,_,_) (n2,_,_) = comparing (map toLower) n1 n2
+data NixPkg = NixPkg Path PackageIdentifier
+  deriving (Show, Eq, Ord)
 
-parseHaskellPackageName :: String -> Maybe Pkg
-parseHaskellPackageName name =
-  case name `regsubmatch` "^([^ \t]+)[ \t]+(.+)$" of
-    [attr,name'] -> case name' `regsubmatch` "^haskell-(.+)-ghc[0-9.]+-(.+)$" of
-                      [name'',version] -> case simpleParse version of
-                                            Just version' -> Just (name'',version',attr)
-                                            _             -> error ("cannot parse " ++ show name)
-                      _                -> case simpleParse name' of
-                                            Just (PackageIdentifier (PackageName n) v) -> Just (n,v,attr)
-                                            _                                          -> Nothing
-    _            -> Nothing
+instance Text NixPkg where
+  disp (NixPkg _ pid) = disp pid
+  parse = do path <- parse
+             _ <- skipSpaces
+             (pname,pver) <- hsLibrary <++ hsExecutable +++ other
+             return (NixPkg path (PackageIdentifier pname pver))
+    where
+      hsLibrary    = do { string "haskell-"; pname <- parse; char '-'; string "ghc"; parse :: ReadP r Version; char '-'; pver <- parse; return (pname,pver) }
+      hsExecutable = do { pname <- parse; char '-'; pver <- parse; return (pname, pver) }
+      other        = do { pname <- munch1 (not . isSpace); return (PackageName pname, Version [] []) }
 
-getHaskellPackageList :: IO Pkgset
-getHaskellPackageList = do
-  allPkgs <- fmap lines (readProcess "bash" ["-c", "exec nix-env -qaP \\* 2>/dev/tty"] "")
-  return [ p | Just p <- map parseHaskellPackageName allPkgs ]
+type PkgSet = Map.Map PackageName (Version,Path)
 
-selectReleaseVersions :: Pkgset -> Pkgset
-selectReleaseVersions pkgs = [ p | p@(_,_,attr) <- pkgs, not (attr =~ "haskellPackages_ghc(6104|6123|704|741|742_profiling|761|762|HEAD)") ]
-
-selectLatestVersions :: Pkgset -> Pkgset
-selectLatestVersions = nubBy (\x y -> comparePkgByName x y == EQ) . sortBy comparePkgByVersion
-
-isHackagePackage :: Hackage -> Pkg -> Bool
-isHackagePackage db (name,version,_) = isJust (find name db >>= find version)
+readNixPkgList :: IO [NixPkg]
+readNixPkgList = readProcess "sh" ["-c", "nix-env -qaP '*' 2>/dev/tty"] "" >>= mapM p . lines
   where
-    find x = Distribution.Hackage.DB.lookup x
+    p :: String -> IO NixPkg
+    p s = maybe (fail ("cannot parse: " ++ show s)) return (simpleParse s)
 
-formatPackageLine :: Pkg -> String
-formatPackageLine (name,version,attr) = show (name, display version, Just url)
+makeNixPkgSet :: Hackage -> [NixPkg] -> PkgSet
+makeNixPkgSet db pkgs = foldr (uncurry (Map.insertWith f)) Map.empty [ (pn,(pv,p)) | NixPkg p (PackageIdentifier pn pv) <- pkgs, isOnHackage pn pv ]
   where
-    url = "http://hydra.nixos.org/job/nixpkgs/trunk/" ++ attr
+    isOnHackage :: PackageName -> Version -> Bool
+    isOnHackage (PackageName n) v = maybe False (const True) (Map.lookup n db)
 
-regsubmatch :: String -> String -> [String]
-regsubmatch buf patt = let (_,_,_,x) = f in x
-  where f :: (String,String,String,[String])
-        f = match (makeRegexOpts compExtended execBlank patt) buf
+    f :: (Version,Path) -> (Version,Path) -> (Version,Path)
+    f x@(v1,p1@(Path path1)) y@(v2,p2@(Path path2))
+      | v1 < v2                                                             = y
+      | v1 > v2                                                             = x
+      | length (takeWhile (/='.') path1) < length (takeWhile (/='.') path2) = x
+      | length (takeWhile (/='.') path1) > length (takeWhile (/='.') path2) = y
+      | length path1 < length path2                                         = x
+      | length path1 > length path2                                         = y
+      | p1 > p2                                                             = x
+      | p1 < p2                                                             = y
+      | otherwise                                                           = error ("cannot decide ordering of " ++ show x ++ " versus " ++ show y)
+
+formatPackageLine :: (PackageName,(Version,Path)) -> String
+formatPackageLine (name, (version, path)) = show (display name, display version, Just url)
+  where
+    url = "http://hydra.nixos.org/job/nixpkgs/trunk/" ++ display path
 
 main :: IO ()
 main = do
   hackage <- readHackage
-  pkgset' <- fmap (filter (isHackagePackage hackage)) getHaskellPackageList
-  let pkgset = (selectLatestVersions . selectReleaseVersions) pkgset'
-  mapM_ (putStrLn . formatPackageLine) (sortBy comparePkgByName pkgset)
+  pkgset <- makeNixPkgSet hackage <$> readNixPkgList
+  mapM_ (putStrLn . formatPackageLine) (Map.toAscList pkgset)
