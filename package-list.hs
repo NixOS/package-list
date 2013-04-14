@@ -66,7 +66,7 @@ sortCaseless = sortBy (\(PackageName x, _) (PackageName y, _) -> comparing (map 
 formatPackageLine :: (PackageName,(Version,Path)) -> String
 formatPackageLine (name, (version, path)) = show (display name, display version, Just url)
   where
-    url = "http://hydra.nixos.org/job/nixpkgs/trunk/" ++ display path
+    url = "http://hydra.nixos.org/job/nixpkgs/trunk/" ++ display path ++ ".x86_64-linux"
 
 main :: IO ()
 main = do
