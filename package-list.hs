@@ -8,7 +8,7 @@ import Text.PrettyPrint ( text )
 import Control.Monad ( unless )
 import Data.Char ( isSpace, toLower )
 import Data.Ord ( comparing )
-import Data.List ( sortBy )
+import Data.List ( sortBy, intercalate )
 import Data.Maybe ( isJust )
 import System.Process ( readProcess )
 
@@ -64,7 +64,7 @@ sortCaseless :: [(PackageName, (Version,Path))] -> [(PackageName, (Version,Path)
 sortCaseless = sortBy (\(PackageName x, _) (PackageName y, _) -> comparing (map toLower) x y)
 
 formatPackageLine :: (PackageName,(Version,Path)) -> String
-formatPackageLine (name, (version, path)) = show (display name, display version, Just url)
+formatPackageLine (name, (version, path)) = intercalate "," (map show [ display name, display version, url ])
   where
     url = "http://hydra.nixos.org/job/nixpkgs/trunk/" ++ display path ++ ".x86_64-linux"
 
