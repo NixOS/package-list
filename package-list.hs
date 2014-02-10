@@ -6,9 +6,8 @@ import Distribution.Text ( Text(..), display, simpleParse )
 import Distribution.Compat.ReadP ( ReadP, (<++), char, munch1, string, look, skipSpaces, pfail )
 import Text.PrettyPrint ( text )
 import Control.Monad ( unless )
-import Data.Char ( isSpace, toLower )
-import Data.Ord ( comparing )
-import Data.List ( sortBy, intercalate )
+import Data.Char ( isSpace )
+import Data.List ( sort, intercalate )
 import Data.Maybe ( isJust )
 import System.Process ( readProcess )
 
@@ -60,9 +59,6 @@ makeNixPkgSet db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)) | Nix
       | p1 < p2                                                             = y
       | otherwise = error ("cannot decide ordering of " ++ show x ++ " versus " ++ show y)
 
-sortCaseless :: [(PackageName, (Version,Path))] -> [(PackageName, (Version,Path))]
-sortCaseless = sortBy (\(PackageName x, _) (PackageName y, _) -> comparing (map toLower) x y)
-
 formatPackageLine :: (PackageName,(Version,Path)) -> String
 formatPackageLine (name, (version, path)) = intercalate "," (map show [ display name, display version, url ])
   where
@@ -72,4 +68,4 @@ main :: IO ()
 main = do
   hackage <- readHackage
   pkgset <- makeNixPkgSet hackage `fmap` readNixPkgList
-  mapM_ (putStrLn . formatPackageLine) (sortCaseless (toList pkgset))
+  mapM_ (putStrLn . formatPackageLine) (sort (toList pkgset))
