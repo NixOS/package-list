@@ -36,7 +36,7 @@ instance Text NixPkg where
       pEof         = look >>= \s -> unless (null s) pfail
 
 readNixPkgList :: IO [NixPkg]
-readNixPkgList = readProcess "sh" ["-c", "nix-env -qaP '*' 2>/dev/tty", "|", "grep", "-v", "nodePackages"] "" >>= mapM p . lines
+readNixPkgList = readProcess "nix-env" ["-qaP"] "" >>= mapM p . lines
   where
     p :: String -> IO NixPkg
     p s = maybe (fail ("cannot parse: " ++ show s)) return (simpleParse s)
