@@ -3,7 +3,7 @@ module Main ( main ) where
 import Prelude hiding ( lookup )
 import Distribution.Hackage.DB hiding ( null, foldr, map )
 import Distribution.Text ( Text(..), display, simpleParse )
-import Distribution.Compat.ReadP ( ReadP, (<++), char, munch1, string, look, skipSpaces, pfail )
+import Distribution.Compat.ReadP ( munch1, look, skipSpaces, pfail )
 import Text.PrettyPrint ( text )
 import Control.Monad ( unless )
 import Data.Char ( isSpace )
@@ -27,16 +27,14 @@ instance Text NixPkg where
   disp (NixPkg _ pid) = disp pid
   parse = do path <- parse
              _ <- skipSpaces
-             (pname,pver) <- hsLibrary <++ hsExecutable <++ other
+             (pname,pver) <- pkgid
              return (NixPkg path (PackageIdentifier pname pver))
     where
-      hsLibrary    = do { string "haskell-"; pname <- parse; char '-'; string "ghc"; parse :: ReadP r Version; char '-'; pver <- parse; return (pname,pver) }
-      hsExecutable = do { PackageIdentifier pname pver <- parse; pEof; return (pname, pver) }
-      other        = do { pname <- munch1 (not . isSpace); return (PackageName pname, Version [] []) }
-      pEof         = look >>= \s -> unless (null s) pfail
+      pkgid  = do { PackageIdentifier pname pver <- parse; pEof; return (pname, pver) }
+      pEof   = look >>= \s -> unless (null s) pfail
 
 readNixPkgList :: IO [NixPkg]
-readNixPkgList = readProcess "nix-env" ["-qaP"] "" >>= mapM p . lines
+readNixPkgList = readProcess "nix-env" ["-qaP", "-f", "list-haskellng.nix"] "" >>= mapM p . lines
   where
     p :: String -> IO NixPkg
     p s = maybe (fail ("cannot parse: " ++ show s)) return (simpleParse s)
@@ -62,7 +60,7 @@ makeNixPkgSet db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)) | Nix
 formatPackageLine :: (PackageName,(Version,Path)) -> String
 formatPackageLine (name, (version, path)) = intercalate "," (map show [ display name, display version, url ])
   where
-    url = "http://hydra.nixos.org/job/nixpkgs/trunk/" ++ display path ++ ".x86_64-linux"
+    url = "http://hydra.nixos.org/job/nixpkgs/haskell-updates/haskellngPackages." ++ display path ++ ".x86_64-linux"
 
 main :: IO ()
 main = do
