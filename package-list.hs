@@ -1,15 +1,17 @@
 module Main ( main ) where
 
-import Prelude hiding ( lookup )
-import Distribution.Hackage.DB hiding ( null, foldr, map )
-import Distribution.Text ( Text(..), display, simpleParse )
-import Distribution.Compat.ReadP ( munch1, look, skipSpaces, pfail )
-import Text.PrettyPrint ( text )
 import Control.Monad ( unless )
 import Data.Char ( isSpace )
 import Data.List ( sort, intercalate )
 import Data.Maybe ( isJust )
+import qualified Data.Set as Set
+import Distribution.Compat.ReadP ( munch1, look, skipSpaces, pfail )
+import Distribution.Hackage.DB hiding ( null, foldr, map )
+import Distribution.Nixpkgs.Haskell.FromCabal.Configuration.GHC7102
+import Distribution.Text ( Text(..), display, simpleParse )
+import Prelude hiding ( lookup )
 import System.Process ( readProcess )
+import Text.PrettyPrint ( text )
 
 newtype Path = Path String
   deriving (Show, Eq, Ord)
@@ -43,7 +45,7 @@ makeNixPkgSet :: Hackage -> [NixPkg] -> PkgSet
 makeNixPkgSet db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)) | NixPkg p (PackageIdentifier pn pv) <- pkgs, isOnHackage pn pv ]
   where
     isOnHackage :: PackageName -> Version -> Bool
-    isOnHackage (PackageName n) v = isJust (lookup n db >>= lookup v)
+    isOnHackage pn@(PackageName n) v = isJust (lookup n db >>= lookup v) && pn `Set.notMember` brokenPackages ghc7102
 
     f :: (Version,Path) -> (Version,Path) -> (Version,Path)
     f x@(v1,p1@(Path path1)) y@(v2,p2@(Path path2))
