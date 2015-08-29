@@ -45,7 +45,7 @@ makeNixPkgSet :: Hackage -> [NixPkg] -> PkgSet
 makeNixPkgSet db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)) | NixPkg p (PackageIdentifier pn pv) <- pkgs, isOnHackage pn pv ]
   where
     isOnHackage :: PackageName -> Version -> Bool
-    isOnHackage pn@(PackageName n) v = isJust (lookup n db >>= lookup v) && pn `Set.notMember` brokenPackages ghc7102
+    isOnHackage pn@(PackageName n) v = isJust (lookup n db >>= lookup v) && pn `Set.notMember` dontDistributePackages ghc7102
 
     f :: (Version,Path) -> (Version,Path) -> (Version,Path)
     f x@(v1,p1@(Path path1)) y@(v2,p2@(Path path2))
