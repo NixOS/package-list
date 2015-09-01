@@ -1,0 +1,8 @@
+flags: {}
+packages:
+  - .
+  - ../cabal2nix/lens-construction-helper
+  - ../cabal2nix/language-nix
+  - ../cabal2nix/distribution-nixpkgs
+extra-deps: []
+resolver: lts-3.3

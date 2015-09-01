@@ -3,6 +3,7 @@ module Main ( main ) where
 import Control.Monad ( unless )
 import Data.Char ( isSpace )
 import Data.List ( sort, intercalate )
+import qualified Data.Map as Map
 import Data.Maybe ( isJust )
 import qualified Data.Set as Set
 import Distribution.Compat.ReadP ( munch1, look, skipSpaces, pfail )
@@ -36,7 +37,7 @@ instance Text NixPkg where
       pEof   = look >>= \s -> unless (null s) pfail
 
 readNixPkgList :: IO [NixPkg]
-readNixPkgList = readProcess "nix-env" ["-qaP", "-f", "list-haskellng.nix"] "" >>= mapM p . lines
+readNixPkgList = readProcess "nix-env" ["-qaP", "-A", "haskellPackages"] "" >>= mapM p . lines
   where
     p :: String -> IO NixPkg
     p s = maybe (fail ("cannot parse: " ++ show s)) return (simpleParse s)
@@ -45,7 +46,7 @@ makeNixPkgSet :: Hackage -> [NixPkg] -> PkgSet
 makeNixPkgSet db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)) | NixPkg p (PackageIdentifier pn pv) <- pkgs, isOnHackage pn pv ]
   where
     isOnHackage :: PackageName -> Version -> Bool
-    isOnHackage pn@(PackageName n) v = isJust (lookup n db >>= lookup v) && pn `Set.notMember` dontDistributePackages ghc7102
+    isOnHackage pn@(PackageName n) v = isJust (lookup n db >>= lookup v) && pn `Set.notMember` Map.keysSet (dontDistributePackages ghc7102)
 
     f :: (Version,Path) -> (Version,Path) -> (Version,Path)
     f x@(v1,p1@(Path path1)) y@(v2,p2@(Path path2))

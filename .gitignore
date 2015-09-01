@@ -1,3 +1,4 @@
 # ignore generated files
 
 /TAGS
+/.stack-work/
