@@ -63,7 +63,7 @@ makeNixPkgSet db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)) | Nix
 formatPackageLine :: (PackageName,(Version,Path)) -> String
 formatPackageLine (name, (version, path)) = intercalate "," (map show [ display name, display version, url ])
   where
-    url = "http://hydra.nixos.org/job/nixpkgs/trunk/haskellPackages." ++ display path ++ ".x86_64-linux"
+    url = "http://hydra.nixos.org/job/nixpkgs/trunk/" ++ display path ++ ".x86_64-linux"
 
 main :: IO ()
 main = do
