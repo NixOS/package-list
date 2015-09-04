@@ -9,6 +9,7 @@ import qualified Data.Set as Set
 import Distribution.Compat.ReadP ( munch1, look, skipSpaces, pfail )
 import Distribution.Hackage.DB hiding ( null, foldr, map )
 import Distribution.Nixpkgs.Haskell.FromCabal.Configuration.GHC7102
+import Distribution.System
 import Distribution.Text ( Text(..), display, simpleParse )
 import Prelude hiding ( lookup )
 import System.Process ( readProcess )
@@ -46,7 +47,10 @@ makeNixPkgSet :: Hackage -> [NixPkg] -> PkgSet
 makeNixPkgSet db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)) | NixPkg p (PackageIdentifier pn pv) <- pkgs, isOnHackage pn pv ]
   where
     isOnHackage :: PackageName -> Version -> Bool
-    isOnHackage pn@(PackageName n) v = isJust (lookup n db >>= lookup v) && pn `Set.notMember` Map.keysSet (dontDistributePackages ghc7102)
+    isOnHackage pn@(PackageName n) v = isJust (lookup n db >>= lookup v) && isDisabled pn
+
+    isDisabled :: PackageName -> Bool   -- TODO: find a platform that is *not* disable and format it into the URL
+    isDisabled pn = maybe False (Set.notMember (Platform X86_64 Linux)) (Map.lookup pn (dontDistributePackages ghc7102))
 
     f :: (Version,Path) -> (Version,Path) -> (Version,Path)
     f x@(v1,p1@(Path path1)) y@(v2,p2@(Path path2))
