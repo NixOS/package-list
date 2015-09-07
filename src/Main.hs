@@ -47,7 +47,7 @@ makeNixPkgSet :: Hackage -> [NixPkg] -> PkgSet
 makeNixPkgSet db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)) | NixPkg p (PackageIdentifier pn pv) <- pkgs, isOnHackage pn pv ]
   where
     isOnHackage :: PackageName -> Version -> Bool
-    isOnHackage pn@(PackageName n) v = isJust (lookup n db >>= lookup v) && isDisabled pn
+    isOnHackage pn@(PackageName n) v = isJust (lookup n db >>= lookup v) && not (isDisabled pn)
 
     isDisabled :: PackageName -> Bool   -- TODO: find a platform that is *not* disable and format it into the URL
     isDisabled pn = maybe False (Set.notMember (Platform X86_64 Linux)) (Map.lookup pn (dontDistributePackages ghc7102))
