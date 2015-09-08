@@ -11,6 +11,7 @@ import Distribution.Hackage.DB hiding ( null, foldr, map )
 import Distribution.Nixpkgs.Haskell.FromCabal.Configuration
 import Distribution.System
 import Distribution.Text ( Text(..), display, simpleParse )
+import Nix.Paths
 import Prelude hiding ( lookup )
 import System.Process ( readProcess )
 import Text.PrettyPrint ( text )
@@ -38,7 +39,7 @@ instance Text NixPkg where
       pEof   = look >>= \s -> unless (null s) pfail
 
 readNixPkgList :: IO [NixPkg]
-readNixPkgList = readProcess "nix-env" ["-qaP", "-A", "haskellPackages"] "" >>= mapM p . lines
+readNixPkgList = readProcess nixEnv ["-qaP", "-A", "haskellPackages"] "" >>= mapM p . lines
   where
     p :: String -> IO NixPkg
     p s = maybe (fail ("cannot parse: " ++ show s)) return (simpleParse s)
@@ -72,7 +73,7 @@ formatPackageLine (name, (version, path)) = intercalate "," (map show [ display 
 main :: IO ()
 main = do
 
-  strbuf <- readProcess "nix-instantiate" ["--find-file", "nixpkgs/pkgs/development/haskell-modules/configuration-hackage2nix.yaml"] ""
+  strbuf <- readProcess nixInstantiate ["--find-file", "nixpkgs/pkgs/development/haskell-modules/configuration-hackage2nix.yaml"] ""
   configFile <- case lines strbuf of
                     [config] -> return config
                     _        -> fail ("unexpected respons from nix-instantiate:\n" ++ strbuf)

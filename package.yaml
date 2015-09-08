@@ -1,5 +1,5 @@
 name:                   generate-nixpkgs-haskell-package-list
-version:                "20150830"
+version:                "20150909"
 synopsis:               Generate the list of Haskell packages in Nixpkgs suitable for upload to Hackage.
 description:            Generate the list of Haskell packages in Nixpkgs suitable for upload to Hackage.
 maintainer:             Peter Simons <simons@cryp.to>
@@ -18,6 +18,7 @@ dependencies:
   - hackage-db
   - pretty
   - process
+  - nix-paths
 
 executables:
   generate-nixpkgs-haskell-package-list:
