@@ -1,7 +1,8 @@
 flags: {}
 packages:
   - .
-  - ../cabal2nix/language-nix
   - ../cabal2nix/distribution-nixpkgs
-extra-deps: []
+extra-deps:
+  - nix-paths-1
+  - language-nix-2
 resolver: lts-3.4
