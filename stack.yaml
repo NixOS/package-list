@@ -1,7 +1,6 @@
 flags: {}
 packages:
   - .
-  - ../cabal2nix/nix-paths
   - ../cabal2nix/language-nix
   - ../cabal2nix/distribution-nixpkgs
 extra-deps: []
