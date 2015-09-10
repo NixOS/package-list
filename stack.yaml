@@ -4,4 +4,4 @@ packages:
   - ../cabal2nix/language-nix
   - ../cabal2nix/distribution-nixpkgs
 extra-deps: []
-resolver: lts-3.3
+resolver: lts-3.4
