@@ -1,8 +1,11 @@
-flags: {}
+# package-list/stack.yaml
+
+resolver: lts-3.6
+
 packages:
   - .
   - ../cabal2nix/distribution-nixpkgs
+
 extra-deps:
   - nix-paths-1
   - language-nix-2.1
-resolver: lts-3.4
