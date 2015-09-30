@@ -51,7 +51,7 @@ makeNixPkgSet config db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)
     isOnHackage pn@(PackageName n) v = isJust (lookup n db >>= lookup v) && not (isDisabled pn)
 
     isDisabled :: PackageName -> Bool   -- TODO: find a platform that is *not* disable and format it into the URL
-    isDisabled pn = maybe False (Set.notMember (Platform X86_64 Linux)) (Map.lookup pn (dontDistributePackages config))
+    isDisabled pn = maybe False (Set.member (Platform X86_64 Linux)) (Map.lookup pn (dontDistributePackages config))
 
     f :: (Version,Path) -> (Version,Path) -> (Version,Path)
     f x@(v1,p1@(Path path1)) y@(v2,p2@(Path path2))
