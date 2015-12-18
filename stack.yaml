@@ -1,11 +1,7 @@
 # package-list/stack.yaml
 
-resolver: lts-3.12
+resolver: nightly-2015-12-17
 
 packages:
   - .
   - ../cabal2nix/distribution-nixpkgs
-
-extra-deps:
-  - nix-paths-1
-  - language-nix-2.1
