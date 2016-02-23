@@ -1,6 +1,6 @@
 # package-list/stack.yaml
 
-resolver: nightly-2015-12-17
+resolver: lts-5.3
 
 packages:
   - .
