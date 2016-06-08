@@ -1,9 +1,9 @@
--- This file has been generated from package.yaml by hpack version 0.7.0.
+-- This file has been generated from package.yaml by hpack version 0.12.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:           generate-nixpkgs-haskell-package-list
-version:        20150909
+version:        20160608
 synopsis:       Generate the list of Haskell packages in Nixpkgs suitable for upload to Hackage.
 description:    Generate the list of Haskell packages in Nixpkgs suitable for upload to Hackage.
 category:       Distribution
@@ -27,7 +27,6 @@ executable generate-nixpkgs-haskell-package-list
       base < 5
     , Cabal >= 1.22.2
     , containers
-    , distribution-nixpkgs
     , language-nix
     , hackage-db
     , pretty

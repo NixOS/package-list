@@ -3,13 +3,9 @@ module Main ( main ) where
 import Control.Monad ( unless )
 import Data.Char ( isSpace )
 import Data.List ( sort, intercalate )
-import qualified Data.Map as Map
 import Data.Maybe ( isJust )
-import qualified Data.Set as Set
 import Distribution.Compat.ReadP ( munch1, look, skipSpaces, pfail )
 import Distribution.Hackage.DB hiding ( null, foldr, map )
-import Distribution.Nixpkgs.Haskell.FromCabal.Configuration
-import Distribution.System
 import Distribution.Text ( Text(..), display, simpleParse )
 import Nix.Paths
 import Prelude hiding ( lookup )
@@ -44,14 +40,11 @@ readNixPkgList = readProcess nixEnv ["-qaP", "-A", "haskellPackages"] "" >>= map
     p :: String -> IO NixPkg
     p s = maybe (fail ("cannot parse: " ++ show s)) return (simpleParse s)
 
-makeNixPkgSet :: Configuration -> Hackage -> [NixPkg] -> PkgSet
-makeNixPkgSet config db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)) | NixPkg p (PackageIdentifier pn pv) <- pkgs, isOnHackage pn pv ]
+makeNixPkgSet :: Hackage -> [NixPkg] -> PkgSet
+makeNixPkgSet db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)) | NixPkg p (PackageIdentifier pn pv) <- pkgs, isOnHackage pn pv ]
   where
     isOnHackage :: PackageName -> Version -> Bool
-    isOnHackage pn@(PackageName n) v = isJust (lookup n db >>= lookup v) && not (isDisabled pn)
-
-    isDisabled :: PackageName -> Bool   -- TODO: find a platform that is *not* disable and format it into the URL
-    isDisabled pn = maybe False (Set.member (Platform X86_64 Linux)) (Map.lookup pn (dontDistributePackages config))
+    isOnHackage (PackageName n) v = isJust (lookup n db >>= lookup v)
 
     f :: (Version,Path) -> (Version,Path) -> (Version,Path)
     f x@(v1,p1@(Path path1)) y@(v2,p2@(Path path2))
@@ -72,13 +65,6 @@ formatPackageLine (name, (version, path)) = intercalate "," (map show [ display 
 
 main :: IO ()
 main = do
-
-  strbuf <- readProcess nixInstantiate ["--find-file", "nixpkgs/pkgs/development/haskell-modules/configuration-hackage2nix.yaml"] ""
-  configFile <- case lines strbuf of
-                    [config] -> return config
-                    _        -> fail ("unexpected respons from nix-instantiate:\n" ++ strbuf)
-
-  config <- readConfiguration configFile
   hackage <- readHackage
-  pkgset <- makeNixPkgSet config hackage `fmap` readNixPkgList
+  pkgset <- makeNixPkgSet hackage `fmap` readNixPkgList
   mapM_ (putStrLn . formatPackageLine) (sort (toList pkgset))
