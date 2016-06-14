@@ -6,6 +6,7 @@ maintainer:             Peter Simons <simons@cryp.to>
 license:                BSD3
 github:                 peti/package-list
 category:               Distribution
+tested-with:            GHC > 7.6 && < 8.1
 
 ghc-options:            -Wall
 
