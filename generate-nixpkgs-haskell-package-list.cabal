@@ -4,13 +4,14 @@
 
 name:           generate-nixpkgs-haskell-package-list
 version:        20160608
-synopsis:       Generate the list of Haskell packages in Nixpkgs suitable for upload to Hackage.
+synopsis:       List Haskell packages in Nixpkgs for upload to Hackage.
 description:    Generate the list of Haskell packages in Nixpkgs suitable for upload to Hackage.
 category:       Distribution
 homepage:       https://github.com/peti/package-list#readme
 bug-reports:    https://github.com/peti/package-list/issues
 maintainer:     Peter Simons <simons@cryp.to>
 license:        BSD3
+license-file:   LICENSE
 tested-with:    GHC > 7.6 && < 8.1
 build-type:     Simple
 cabal-version:  >= 1.10
