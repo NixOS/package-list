@@ -1,9 +1,9 @@
--- This file has been generated from package.yaml by hpack version 0.14.0.
+-- This file has been generated from package.yaml by hpack version 0.18.1.
 --
 -- see: https://github.com/sol/hpack
 
 name:           generate-nixpkgs-haskell-package-list
-version:        20160608
+version:        0
 synopsis:       List Haskell packages in Nixpkgs for upload to Hackage.
 description:    Generate the list of Haskell packages in Nixpkgs suitable for upload to Hackage.
 category:       Distribution
@@ -12,7 +12,7 @@ bug-reports:    https://github.com/peti/package-list/issues
 maintainer:     Peter Simons <simons@cryp.to>
 license:        BSD3
 license-file:   LICENSE
-tested-with:    GHC > 7.6 && < 8.1
+tested-with:    GHC > 7.6 && < 8.3
 build-type:     Simple
 cabal-version:  >= 1.10
 
@@ -30,7 +30,7 @@ executable generate-nixpkgs-haskell-package-list
     , Cabal >= 1.22.2
     , containers
     , language-nix
-    , hackage-db
+    , hackage-db >= 2
     , pretty
     , process
     , nix-paths

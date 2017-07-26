@@ -1,5 +1,5 @@
 name:                   generate-nixpkgs-haskell-package-list
-version:                "20160608"
+version:                "0"
 synopsis:               List Haskell packages in Nixpkgs for upload to Hackage.
 description:            Generate the list of Haskell packages in Nixpkgs suitable for upload to Hackage.
 maintainer:             Peter Simons <simons@cryp.to>
@@ -7,7 +7,7 @@ license:                BSD3
 license-file:           LICENSE
 github:                 peti/package-list
 category:               Distribution
-tested-with:            GHC > 7.6 && < 8.1
+tested-with:            GHC > 7.6 && < 8.3
 
 ghc-options:            -Wall
 
@@ -16,7 +16,7 @@ dependencies:
   - Cabal >= 1.22.2
   - containers
   - language-nix
-  - hackage-db
+  - hackage-db >= 2
   - pretty
   - process
   - nix-paths

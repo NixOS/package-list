@@ -3,10 +3,14 @@ module Main ( main ) where
 import Control.Monad ( unless )
 import Data.Char ( isSpace )
 import Data.List ( sort, intercalate )
+import Data.Map hiding ( null, foldr, map )
 import Data.Maybe ( isJust )
 import Distribution.Compat.ReadP ( munch1, look, skipSpaces, pfail )
-import Distribution.Hackage.DB hiding ( null, foldr, map )
+import Distribution.Hackage.DB.Parsed
+import Distribution.Hackage.DB.Path
+import Distribution.Package
 import Distribution.Text ( Text(..), display, simpleParse )
+import Distribution.Version
 import Nix.Paths
 import Prelude hiding ( lookup )
 import System.Process ( readProcess )
@@ -40,11 +44,11 @@ readNixPkgList = readProcess nixEnv ["-qaP", "-A", "haskellPackages"] "" >>= map
     p :: String -> IO NixPkg
     p s = maybe (fail ("cannot parse: " ++ show s)) return (simpleParse s)
 
-makeNixPkgSet :: Hackage -> [NixPkg] -> PkgSet
+makeNixPkgSet :: HackageDB -> [NixPkg] -> PkgSet
 makeNixPkgSet db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)) | NixPkg p (PackageIdentifier pn pv) <- pkgs, isOnHackage pn pv ]
   where
     isOnHackage :: PackageName -> Version -> Bool
-    isOnHackage (PackageName n) v = isJust (lookup n db >>= lookup v)
+    isOnHackage n v = isJust (lookup n db >>= lookup v . versions)
 
     f :: (Version,Path) -> (Version,Path) -> (Version,Path)
     f x@(v1,p1@(Path path1)) y@(v2,p2@(Path path2))
@@ -65,6 +69,6 @@ formatPackageLine (name, (version, path)) = intercalate "," (map show [ display 
 
 main :: IO ()
 main = do
-  hackage <- readHackage
+  hackage <- hackageTarball >>= readTarball Nothing
   pkgset <- makeNixPkgSet hackage `fmap` readNixPkgList
   mapM_ (putStrLn . formatPackageLine) (sort (toList pkgset))
