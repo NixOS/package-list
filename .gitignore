@@ -1,7 +1,9 @@
 # ignore generated files
 
 /.cabal-sandbox/*
+/.ghc.environment.*
 /.stack-work/
 /TAGS
 /cabal.sandbox.config
+/dist-newstyle/*
 /dist/*
