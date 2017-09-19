@@ -16,7 +16,7 @@ dependencies:
   - Cabal >= 1.22.2
   - containers
   - language-nix
-  - hackage-db >= 2
+  - hackage-db > 2
   - pretty
   - process
   - nix-paths

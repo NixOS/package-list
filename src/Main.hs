@@ -6,8 +6,7 @@ import Data.List ( sort, intercalate )
 import Data.Map hiding ( null, foldr, map )
 import Data.Maybe ( isJust )
 import Distribution.Compat.ReadP ( munch1, look, skipSpaces, pfail )
-import Distribution.Hackage.DB.Parsed
-import Distribution.Hackage.DB.Path
+import Distribution.Hackage.DB
 import Distribution.Package
 import Distribution.Text ( Text(..), display, simpleParse )
 import Distribution.Version
@@ -48,7 +47,7 @@ makeNixPkgSet :: HackageDB -> [NixPkg] -> PkgSet
 makeNixPkgSet db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)) | NixPkg p (PackageIdentifier pn pv) <- pkgs, isOnHackage pn pv ]
   where
     isOnHackage :: PackageName -> Version -> Bool
-    isOnHackage n v = isJust (lookup n db >>= lookup v . versions)
+    isOnHackage n v = isJust (lookup n db >>= lookup v)
 
     f :: (Version,Path) -> (Version,Path) -> (Version,Path)
     f x@(v1,p1@(Path path1)) y@(v2,p2@(Path path2))
