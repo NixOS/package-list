@@ -10,7 +10,6 @@ import Distribution.Hackage.DB
 import Distribution.Package
 import Distribution.Text ( Text(..), display, simpleParse )
 import Distribution.Version
-import Nix.Paths
 import Prelude hiding ( lookup )
 import System.Process ( readProcess )
 import Text.PrettyPrint ( text )
@@ -38,7 +37,7 @@ instance Text NixPkg where
       pEof   = look >>= \s -> unless (null s) pfail
 
 readNixPkgList :: IO [NixPkg]
-readNixPkgList = readProcess nixEnv ["-qaP", "-A", "haskellPackages"] "" >>= mapM p . lines
+readNixPkgList = readProcess "nix-env" ["-qaP", "-A", "haskellPackages"] "" >>= mapM p . lines
   where
     p :: String -> IO NixPkg
     p s = maybe (fail ("cannot parse: " ++ show s)) return (simpleParse s)
