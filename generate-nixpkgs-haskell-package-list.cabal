@@ -1,31 +1,33 @@
-name:           generate-nixpkgs-haskell-package-list
-version:        0
-synopsis:       List Haskell packages in Nixpkgs for upload to Hackage.
-description:    Generate the list of Haskell packages in Nixpkgs suitable for upload to Hackage.
-category:       Distribution
-homepage:       https://github.com/peti/package-list#readme
-bug-reports:    https://github.com/peti/package-list/issues
-maintainer:     Peter Simons <simons@cryp.to>
-license:        BSD3
-license-file:   LICENSE
-tested-with:    GHC == 8.2.2, GHC == 8.4.3
-build-type:     Simple
-cabal-version:  >= 1.10
+name:          generate-nixpkgs-haskell-package-list
+version:       0
+synopsis:      List Haskell packages in Nixpkgs for upload to Hackage.
+description:   Generate a CSV listing of all Haskell packages in Nixpkgs. That file can be
+               uploaded to Hackage so that the web site can display the version of a given
+               package that\'s available in the distribution.
+license:       BSD3
+license-file:  LICENSE
+maintainer:    Peter Simons <simons@cryp.to>
+tested-with:   GHC == 8.4.3
+category:      Distribution
+homepage:      https://github.com/peti/package-list#readme
+bug-reports:   https://github.com/peti/package-list/issues
+build-type:    Simple
+cabal-version: >= 1.10
 
 source-repository head
-  type: git
+  type:     git
   location: https://github.com/peti/package-list
 
 executable generate-nixpkgs-haskell-package-list
-  main-is: Main.hs
-  hs-source-dirs:
-      src
-  ghc-options: -Wall
-  build-depends:
-      base < 5
-    , Cabal >= 1.22.2
-    , containers
-    , hackage-db > 2
-    , pretty
-    , process
-  default-language: Haskell2010
+  main-is:            Main.hs
+  hs-source-dirs:     src
+  build-depends:      base       < 5
+                    , Cabal      >= 1.22.2
+                    , containers
+                    , hackage-db > 2
+                    , pretty
+                    , process
+  default-language:   Haskell2010
+  default-extensions: MonadFailDesugaring
+  ghc-options:        -Wall -Wcompat -Wincomplete-uni-patterns -Wincomplete-record-updates
+                      -Wredundant-constraints -threaded
