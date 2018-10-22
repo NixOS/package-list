@@ -7,7 +7,7 @@ description:   Generate a CSV listing of all Haskell packages in Nixpkgs. That f
 license:       BSD3
 license-file:  LICENSE
 maintainer:    Peter Simons <simons@cryp.to>
-tested-with:   GHC == 8.4.3
+tested-with:   GHC == 8.6.1
 category:      Distribution
 homepage:      https://github.com/peti/package-list#readme
 bug-reports:   https://github.com/peti/package-list/issues
