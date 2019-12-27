@@ -7,7 +7,7 @@ description:   Generate a CSV listing of all Haskell packages in Nixpkgs. That f
 license:       BSD3
 license-file:  LICENSE
 maintainer:    Peter Simons <simons@cryp.to>
-tested-with:   GHC == 8.6.3
+tested-with:   GHC == 8.8.1
 category:      Distribution
 homepage:      https://github.com/peti/package-list#readme
 bug-reports:   https://github.com/peti/package-list/issues
@@ -22,12 +22,11 @@ executable generate-nixpkgs-haskell-package-list
   main-is:            Main.hs
   hs-source-dirs:     src
   build-depends:      base       < 5
-                    , Cabal      >= 1.22.2
+                    , Cabal      > 3
                     , containers
                     , hackage-db > 2
                     , pretty
                     , process
   default-language:   Haskell2010
-  default-extensions: MonadFailDesugaring
   ghc-options:        -Wall -Wcompat -Wincomplete-uni-patterns -Wincomplete-record-updates
                       -Wredundant-constraints -threaded

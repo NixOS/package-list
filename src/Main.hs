@@ -1,14 +1,14 @@
 module Main ( main ) where
 
-import Control.Monad ( unless )
 import Data.Char ( isSpace )
 import Data.List ( sort, intercalate )
-import Data.Map hiding ( null, foldr, map )
-import Data.Maybe ( isJust )
-import Distribution.Compat.ReadP ( munch1, look, skipSpaces, pfail )
+import Data.Map hiding ( null, foldr, map, mapMaybe )
+import Data.Maybe
+import Distribution.Compat.CharParsing ( munch1, skipSpaces1, eof )
 import Distribution.Hackage.DB
 import Distribution.Package
-import Distribution.Text ( Text(..), display, simpleParse )
+import Distribution.Parsec
+import Distribution.Pretty
 import Distribution.Version
 import Prelude hiding ( lookup )
 import System.Process ( readProcess )
@@ -22,25 +22,22 @@ data NixPkg = NixPkg Path PackageIdentifier
 
 type PkgSet = Map PackageName (Version,Path)
 
-instance Text Path where
-  disp (Path p) = text p
-  parse = Path `fmap` munch1 (not . isSpace)
+instance Pretty Path where
+  pretty (Path p) = text p
 
-instance Text NixPkg where
-  disp (NixPkg _ pid) = disp pid
-  parse = do path <- parse
-             _ <- skipSpaces
-             (pname,pver) <- pkgid
-             return (NixPkg path (PackageIdentifier pname pver))
-    where
-      pkgid  = do { PackageIdentifier pname pver <- parse; pEof; return (pname, pver) }
-      pEof   = look >>= \s -> unless (null s) pfail
+instance Parsec Path where
+  parsec = Path <$> munch1 (not . isSpace)
+
+instance Parsec NixPkg where
+     parsec = do path <- parsec
+                 _ <- skipSpaces1
+                 (pname,pver) <- pkgid
+                 return (NixPkg path (PackageIdentifier pname pver))
+        where
+         pkgid  = do { PackageIdentifier pname pver <- parsec; eof; return (pname, pver) }
 
 readNixPkgList :: IO [NixPkg]
-readNixPkgList = readProcess "nix-env" ["-qaP", "-A", "haskellPackages"] "" >>= mapM p . lines
-  where
-    p :: String -> IO NixPkg
-    p s = maybe (fail ("cannot parse: " ++ show s)) return (simpleParse s)
+readNixPkgList = mapMaybe simpleParsec . lines <$> readProcess "nix-env" ["-qaP", "-A", "haskellPackages"] ""
 
 makeNixPkgSet :: HackageDB -> [NixPkg] -> PkgSet
 makeNixPkgSet db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)) | NixPkg p (PackageIdentifier pn pv) <- pkgs, isOnHackage pn pv ]
@@ -61,9 +58,9 @@ makeNixPkgSet db pkgs = foldr (uncurry (insertWith f)) empty [ (pn,(pv,p)) | Nix
       | otherwise = error ("cannot decide ordering of " ++ show x ++ " versus " ++ show y)
 
 formatPackageLine :: (PackageName,(Version,Path)) -> String
-formatPackageLine (name, (version, path)) = intercalate "," (map show [ display name, display version, url ])
+formatPackageLine (name, (version, path)) = intercalate "," (map show [ prettyShow name, prettyShow version, url ])
   where
-    url = "http://hydra.nixos.org/job/nixpkgs/trunk/" ++ display path ++ ".x86_64-linux"
+    url = "http://hydra.nixos.org/job/nixpkgs/trunk/" ++ prettyShow path ++ ".x86_64-linux"
 
 main :: IO ()
 main = do
